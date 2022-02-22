@@ -189,7 +189,14 @@ func getAllAssets(contract *client.Contract) {
 func createAsset(contract *client.Contract) {
 	fmt.Printf("Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments \n")
 
-	_, err := contract.SubmitTransaction("CreateAsset", assetId, "yellow", "5", "Tom", "1300")
+	_, err := contract.SubmitTransaction("CreateAsset", assetId,
+	"BMW",
+	"Black",
+	"owner1",
+	"2010",
+	"1000",
+	"",
+	"")
 	if err != nil {
 		panic(fmt.Errorf("failed to submit transaction: %w", err))
 	}

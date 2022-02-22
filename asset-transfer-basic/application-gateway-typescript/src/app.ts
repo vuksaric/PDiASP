@@ -149,13 +149,18 @@ async function getAllAssets(contract: Contract): Promise<void> {
 async function createAsset(contract: Contract): Promise<void> {
     console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments');
 
+    const array: string[] = []
     await contract.submitTransaction(
         'CreateAsset',
         assetId,
-        'yellow',
-        '5',
-        'Tom',
-        '1300',
+        'BMW',
+        'Black',
+        'owner1',
+        '2010',
+        '1000',
+        '0',
+        '[]'
+        
     );
 
     console.log('*** Transaction committed successfully');
@@ -166,7 +171,7 @@ async function createAsset(contract: Contract): Promise<void> {
  * while waiting for the commit notification.
  */
 async function transferAssetAsync(contract: Contract): Promise<void> {
-    console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
+    /*console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
 
     const commit = await contract.submitAsync('TransferAsset', {
         arguments: [assetId, 'Saptha'],
@@ -181,7 +186,7 @@ async function transferAssetAsync(contract: Contract): Promise<void> {
         throw new Error(`Transaction ${status.transactionId} failed to commit with status code ${status.code}`);
     }
 
-    console.log('*** Transaction committed successfully');
+    console.log('*** Transaction committed successfully');*/
 }
 
 async function readAssetByID(contract: Contract): Promise<void> {
@@ -203,11 +208,14 @@ async function updateNonExistentAsset(contract: Contract): Promise<void>{
     try {
         await contract.submitTransaction(
             'UpdateAsset',
-            'asset70',
-            'blue',
-            '5',
-            'Tomoko',
-            '300',
+            'asset7',
+            'BMW',
+            'Black',
+            'owner1',
+            '2010',
+            '1000',
+            '0',
+            '[]'
         );
         console.log('******** FAILED to return an error');
     } catch (error) {

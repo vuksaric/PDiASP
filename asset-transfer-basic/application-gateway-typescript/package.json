@@ -19,8 +19,10 @@
     "author": "Hyperledger",
     "license": "Apache-2.0",
     "dependencies": {
+        "@grpc/grpc-js": "^1.5.0",
         "@hyperledger/fabric-gateway": "^1.0.0",
-        "@grpc/grpc-js": "^1.5.0"
+        "n": "^8.0.2",
+        "stable": "^0.1.8"
     },
     "devDependencies": {
         "@tsconfig/node14": "^1.0.1",

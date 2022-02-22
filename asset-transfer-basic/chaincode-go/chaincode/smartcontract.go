@@ -22,6 +22,7 @@ type Asset struct {
 	CarColor		string 		`json:"CarColor"`
 	OwnerId			string 		`json:"OwnerId"`
 	ProductionYear	int 		`json:"ProductionYear"`
+	Price			int			`json:"Price"`
 	Failures		[]Failure 	`json:"Failures,omitempty" metadata:"Failures,optional"`
 }
 
@@ -54,8 +55,8 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 	failures2 := []Failure{}
 
 	assets := []Asset{
-		{ID: "asset7", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Failures: failures},
-		{ID: "asset8", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Failures: failures2},
+		{ID: "asset7", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Price:100 ,Failures: failures},
+		{ID: "asset8", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Price:100 ,Failures: failures2},
 	}
 
 	for _, asset := range assets {
@@ -91,7 +92,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 }
 
 // CreateAsset issues a new asset to the world state with given details.
-func (s *SmartContract) CreateAsset(ctx contractapi.TransactionContextInterface, id string, carBrand string, carModel string, carColor string, ownerId string, productionYear int, failures []Failure) error {
+func (s *SmartContract) CreateAsset(ctx contractapi.TransactionContextInterface, id string, carBrand string, carModel string, carColor string, ownerId string, productionYear int, price int, failures []Failure) error {
 	exists, err := s.AssetExists(ctx, id)
 	if err != nil {
 		return err
@@ -107,6 +108,7 @@ func (s *SmartContract) CreateAsset(ctx contractapi.TransactionContextInterface,
 		CarColor:          		carColor,
 		OwnerId: 				ownerId,
 		ProductionYear:			productionYear,
+		Price:					price,
 		Failures:				failures,
 	}
 	assetJSON, err := json.Marshal(asset)
@@ -136,8 +138,26 @@ func (s *SmartContract) ReadAsset(ctx contractapi.TransactionContextInterface, i
 	return &asset, nil
 }
 
+func (s *SmartContract) ReadOwner(ctx contractapi.TransactionContextInterface, id string) (*Owner, error) {
+	assetJSON, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if assetJSON == nil {
+		return nil, fmt.Errorf("the asset %s does not exist", id)
+	}
+
+	var asset Owner
+	err = json.Unmarshal(assetJSON, &asset)
+	if err != nil {
+		return nil, err
+	}
+
+	return &asset, nil
+}
+
 // UpdateAsset updates an existing asset in the world state with provided parameters.
-func (s *SmartContract) UpdateAsset(ctx contractapi.TransactionContextInterface, id string, carBrand string, carModel string, carColor string, ownerId string, productionYear int, failures []Failure) error {
+func (s *SmartContract) UpdateAsset(ctx contractapi.TransactionContextInterface, id string, carBrand string, carModel string, carColor string, ownerId string, productionYear int, price int ,failures []Failure) error {
 	exists, err := s.AssetExists(ctx, id)
 	if err != nil {
 		return err
@@ -154,6 +174,7 @@ func (s *SmartContract) UpdateAsset(ctx contractapi.TransactionContextInterface,
 		CarColor:          		carColor,
 		OwnerId: 				ownerId,
 		ProductionYear:			productionYear,
+		Price:					price,
 		Failures:				failures,
 	}
 	assetJSON, err := json.Marshal(asset)
@@ -194,23 +215,63 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 		return "", err
 	}
 
-	oldOwner := asset.OwnerId
-	if (len(asset.Failures) == 0){
-		asset.OwnerId = newOwner
-		
-		assetJSON, err := json.Marshal(asset)
-		if err != nil {
-			return "", err
-		}
+	ownerNew, err := s.ReadOwner(ctx, newOwner)
+	if err != nil {
+		return "", err
+	}
 	
-		err = ctx.GetStub().PutState(id, assetJSON)
-		if err != nil {
-			return "", err
+	oldOwner := asset.OwnerId
+
+	ownerOld, err := s.ReadOwner(ctx, oldOwner)
+	if err != nil {
+		return "", err
+	}
+	
+	asset.OwnerId = newOwner
+	failuresPrice := 0	
+	if len(asset.Failures) != 0 {
+		for i:= 0;i<len(asset.Failures);i++{
+			failuresPrice += asset.Failures[i].Price
 		}
 	}
 
+	price := asset.Price - failuresPrice
+	ownerNew.Money -= price
+	ownerOld.Money += price 
 
-	return oldOwner, nil
+	assetJSON, err := json.Marshal(asset)
+	if err != nil {
+		return "", err
+	}
+
+	err = ctx.GetStub().PutState(id, assetJSON)
+	if err != nil {
+		return "", err
+	}
+
+	ownerNewJson, err := json.Marshal(ownerNew)
+	if err != nil {
+		return "", err
+	}
+
+	err = ctx.GetStub().PutState(newOwner, ownerNewJson)
+	if err != nil {
+		return "", err
+	}
+
+	ownerOldJson, err := json.Marshal(ownerOld)
+	if err != nil {
+		return "", err
+	}
+
+	err = ctx.GetStub().PutState(oldOwner, ownerOldJson)
+	if err != nil {
+		return "", err
+	}
+
+	s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
+
+	return asset.OwnerId, nil
 }
 
 // GetAllAssets returns all assets found in world state
@@ -275,7 +336,7 @@ func (s *SmartContract) ChangeColor(ctx contractapi.TransactionContextInterface,
 		return "", err
 	}
 
-	oldColor := asset.CarColor
+	//oldColor := asset.CarColor
 	asset.CarColor = newColor
 
 	assetJSON, err := json.Marshal(asset)
@@ -288,5 +349,7 @@ func (s *SmartContract) ChangeColor(ctx contractapi.TransactionContextInterface,
 		return "", err
 	}
 
-	return oldColor, nil
+	s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
+
+	return asset.CarColor, nil
 }
