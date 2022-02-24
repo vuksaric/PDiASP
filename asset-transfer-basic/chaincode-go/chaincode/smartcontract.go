@@ -39,11 +39,6 @@ type Failure struct {
 	Price		int
 }
 
-/*type Car struct {
-
-	
-}*/
-
 // InitLedger adds a base set of assets to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 
@@ -231,13 +226,13 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	failuresPrice := 0	
 	if len(asset.Failures) != 0 {
 		for i:= 0;i<len(asset.Failures);i++{
-			failuresPrice += asset.Failures[i].Price
+			failuresPrice = failuresPrice + asset.Failures[i].Price
 		}
 	}
 
 	price := asset.Price - failuresPrice
-	ownerNew.Money -= price
-	ownerOld.Money += price 
+	ownerNew.Money = ownerNew.Money - price
+	ownerOld.Money = ownerOld.Money + price 
 
 	assetJSON, err := json.Marshal(asset)
 	if err != nil {
@@ -269,7 +264,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 		return "", err
 	}
 
-	s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
+	//s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
 
 	return asset.OwnerId, nil
 }
@@ -349,7 +344,151 @@ func (s *SmartContract) ChangeColor(ctx contractapi.TransactionContextInterface,
 		return "", err
 	}
 
-	s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
+	//s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
 
 	return asset.CarColor, nil
 }
+
+func (s *SmartContract) CreateFailure(ctx contractapi.TransactionContextInterface, id string, failureName string, price int) (string, error) {
+	asset, err := s.ReadAsset(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
+	failure := Failure{Name:failureName,Price:price}
+
+	asset.Failures = append(asset.Failures, failure)
+
+	failuresPrice := 0	
+	if len(asset.Failures) != 0 {
+		for i:= 0;i<len(asset.Failures);i++{
+			failuresPrice = failuresPrice + asset.Failures[i].Price
+		}
+	}
+	
+	if failuresPrice < asset.Price{
+		assetJSON, err := json.Marshal(asset)
+		if err != nil {
+			return "", err
+		}
+	
+		err = ctx.GetStub().PutState(id, assetJSON)
+		if err != nil {
+			return "", err
+		}
+	}else{
+		s.DeleteAsset(ctx,asset.ID)
+	}
+
+	return failure.Name, nil
+
+}
+
+func (s *SmartContract) RepairFailures(ctx contractapi.TransactionContextInterface, id string) (string, error) {
+	asset, err := s.ReadAsset(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
+	asset.Failures = nil
+
+	assetJSON, err := json.Marshal(asset)
+	if err != nil {
+		return "", err
+	}
+
+	err = ctx.GetStub().PutState(id, assetJSON)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (s *SmartContract) FindColor(ctx contractapi.TransactionContextInterface, color string) ([]*Asset, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all assets in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	var assets []*Asset
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var asset Asset
+		err = json.Unmarshal(queryResponse.Value, &asset)
+		if err != nil {
+			return nil, err
+		}
+		if color == asset.CarColor {
+			assets = append(assets, &asset)
+		}
+	}
+
+	return assets, nil
+}
+
+func (s *SmartContract) FindOwnerctx contractapi.TransactionContextInterface, owner string) ([]*Asset, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all assets in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	var assets []*Asset
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var asset Asset
+		err = json.Unmarshal(queryResponse.Value, &asset)
+		if err != nil {
+			return nil, err
+		}
+		if owner == asset.OwnerId {
+			assets = append(assets, &asset)
+		}
+	}
+
+	return assets, nil
+}
+
+func (s *SmartContract) FindOwnerColor(ctx contractapi.TransactionContextInterface, color string, owner string) ([]*Asset, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all assets in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	var assets []*Asset
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var asset Asset
+		err = json.Unmarshal(queryResponse.Value, &asset)
+		if err != nil {
+			return nil, err
+		}
+		if color == asset.CarColor && owner == asset.OwnerId {
+			assets = append(assets, &asset)
+		}
+	}
+
+	return assets, nil
+}
+
