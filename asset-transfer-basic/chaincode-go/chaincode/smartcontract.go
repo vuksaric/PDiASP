@@ -409,7 +409,12 @@ func (s *SmartContract) RepairFailures(ctx contractapi.TransactionContextInterfa
 		}
 	}
 
-	asset.Money = asset.Money - failuresPrice
+	owner, err := s.ReadOwner(ctx, asset.OwnerId)
+	if err != nil {
+		return "", err
+	}
+
+	owner.Money = owner.Money - failuresPrice
 
 	asset.Failures = nil
 
@@ -419,6 +424,16 @@ func (s *SmartContract) RepairFailures(ctx contractapi.TransactionContextInterfa
 	}
 
 	err = ctx.GetStub().PutState(id, assetJSON)
+	if err != nil {
+		return "", err
+	}
+
+	ownerJSON, err := json.Marshal(owner)
+	if err != nil {
+		return "", err
+	}
+
+	err = ctx.GetStub().PutState(owner.ID, ownerJSON)
 	if err != nil {
 		return "", err
 	}
