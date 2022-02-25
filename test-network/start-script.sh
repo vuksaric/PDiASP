@@ -1,7 +1,6 @@
 #!/bin/bash
 
-./network.sh up
-./network.sh createChannel
+./network.sh up createChannel -c mychannel -ca
 ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
 export PATH=${PWD}/../bin:$PATH
 export FABRIC_CFG_PATH=$PWD/../config/

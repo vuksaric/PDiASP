@@ -209,7 +209,7 @@ func (s *SmartContract) AssetExists(ctx contractapi.TransactionContextInterface,
 }
 
 // TransferAsset updates the owner field of asset with given id in world state, and returns the old owner.
-func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterface, id string, newOwner string) (string, error) {
+func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterface, id string, newOwner string, buyWithFailure string) (string, error) {
 	asset, err := s.ReadAsset(ctx, id)
 	if err != nil {
 		return "", err
@@ -226,47 +226,54 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	if err != nil {
 		return "", err
 	}
+
+	buyBool := false
+	if(buyWithFailure == "true"){
+		buyBool = true
+	}
 	
-	asset.OwnerId = newOwner
-	failuresPrice := 0	
-	if len(asset.Failures) != 0 {
-		for i:= 0;i<len(asset.Failures);i++{
-			failuresPrice = failuresPrice + asset.Failures[i].Price
+	if (len(asset.Failures) != 0 && buyBool) || len(asset.Failures) == 0 {
+		asset.OwnerId = newOwner
+		failuresPrice := 0
+		if len(asset.Failures) != 0 {
+			for i:= 0;i<len(asset.Failures);i++{
+				failuresPrice = failuresPrice + asset.Failures[i].Price
+			}
 		}
-	}
 
-	price := asset.Price - failuresPrice
-	ownerNew.Money = ownerNew.Money - price
-	ownerOld.Money = ownerOld.Money + price 
+		price := asset.Price - failuresPrice
+		ownerNew.Money = ownerNew.Money - price
+		ownerOld.Money = ownerOld.Money + price 
 
-	assetJSON, err := json.Marshal(asset)
-	if err != nil {
-		return "", err
-	}
+		assetJSON, err := json.Marshal(asset)
+		if err != nil {
+			return "", err
+		}
 
-	err = ctx.GetStub().PutState(id, assetJSON)
-	if err != nil {
-		return "", err
-	}
+		err = ctx.GetStub().PutState(id, assetJSON)
+		if err != nil {
+			return "", err
+		}
 
-	ownerNewJson, err := json.Marshal(ownerNew)
-	if err != nil {
-		return "", err
-	}
+		ownerNewJson, err := json.Marshal(ownerNew)
+		if err != nil {
+			return "", err
+		}
 
-	err = ctx.GetStub().PutState(newOwner, ownerNewJson)
-	if err != nil {
-		return "", err
-	}
+		err = ctx.GetStub().PutState(newOwner, ownerNewJson)
+		if err != nil {
+			return "", err
+		}
 
-	ownerOldJson, err := json.Marshal(ownerOld)
-	if err != nil {
-		return "", err
-	}
+		ownerOldJson, err := json.Marshal(ownerOld)
+		if err != nil {
+			return "", err
+		}
 
-	err = ctx.GetStub().PutState(oldOwner, ownerOldJson)
-	if err != nil {
-		return "", err
+		err = ctx.GetStub().PutState(oldOwner, ownerOldJson)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	//s.UpdateAsset(ctx, asset.ID, asset.CarBrand, asset.CarModel, asset.CarColor, asset.OwnerId, asset.ProductionYear, asset.Price, asset.Failures)
@@ -394,6 +401,15 @@ func (s *SmartContract) RepairFailures(ctx contractapi.TransactionContextInterfa
 	if err != nil {
 		return "", err
 	}
+
+	failuresPrice := 0	
+	if len(asset.Failures) != 0 {
+		for i:= 0;i<len(asset.Failures);i++{
+			failuresPrice = failuresPrice + asset.Failures[i].Price
+		}
+	}
+
+	asset.Money = asset.Money - failuresPrice
 
 	asset.Failures = nil
 
