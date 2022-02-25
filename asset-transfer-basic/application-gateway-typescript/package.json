@@ -21,11 +21,15 @@
     "dependencies": {
         "@grpc/grpc-js": "^1.5.0",
         "@hyperledger/fabric-gateway": "^1.0.0",
+        "inquirer": "^8.2.0",
         "n": "^8.0.2",
+        "prompt-sync": "^4.2.0",
         "stable": "^0.1.8"
     },
     "devDependencies": {
         "@tsconfig/node14": "^1.0.1",
+        "@types/node": "^17.0.21",
+        "@types/prompt-sync": "^4.1.1",
         "@typescript-eslint/eslint-plugin": "^5.6.0",
         "@typescript-eslint/parser": "^5.6.0",
         "eslint": "^8.4.1",

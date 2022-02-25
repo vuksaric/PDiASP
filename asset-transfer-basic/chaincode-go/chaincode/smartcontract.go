@@ -50,8 +50,12 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 	failures2 := []Failure{}
 
 	assets := []Asset{
-		{ID: "asset7", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Price:100 ,Failures: failures},
-		{ID: "asset8", CarBrand: "blue", CarModel: "proba", CarColor: "Tomoko", OwnerId: "owner1",ProductionYear:1000, Price:100 ,Failures: failures2},
+		{ID: "asset1", CarBrand: "BMW", CarModel: "M3", CarColor: "Black", OwnerId: "owner1",ProductionYear:2010, Price:1000 ,Failures: failures},
+		{ID: "asset2", CarBrand: "Volkswagen", CarModel: "Passat B6", CarColor: "Blue", OwnerId: "owner2",ProductionYear:2011, Price:1000 ,Failures: failures2},
+		{ID: "asset3", CarBrand: "Mercedes", CarModel: "G 500", CarColor: "Orange", OwnerId: "owner3",ProductionYear:2012, Price:1000 ,Failures: failures},
+		{ID: "asset4", CarBrand: "Fiat", CarModel: "Punto", CarColor: "Green", OwnerId: "owner1",ProductionYear:2013, Price:1000 ,Failures: failures2},
+		{ID: "asset5", CarBrand: "Skoda", CarModel: "Octavia", CarColor: "White", OwnerId: "owner2",ProductionYear:2014, Price:1000 ,Failures: failures},
+		{ID: "asset6", CarBrand: "BMW", CarModel: "M4", CarColor: "Red", OwnerId: "owner3",ProductionYear:2015, Price:1000 ,Failures: failures2},
 	}
 
 	for _, asset := range assets {
@@ -67,8 +71,9 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 	}
 
 	owners := []Owner{
-		{ID: "owner1", Name: "blue", Surname: "Tomoko",Email:"proba" ,Money: 300},
-		{ID: "owner2", Name: "blue", Surname: "Tomoko",Email:"proba" ,Money: 300},
+		{ID: "owner1", Name: "Name1", Surname: "Surname1",Email:"email1" ,Money: 2300},
+		{ID: "owner2", Name: "Name2", Surname: "Surname2",Email:"email2" ,Money: 2300},
+		{ID: "owner3", Name: "Name3", Surname: "Surname3",Email:"email3" ,Money: 2300},
 	}
 
 	for _, owner := range owners {
@@ -434,7 +439,7 @@ func (s *SmartContract) FindColor(ctx contractapi.TransactionContextInterface, c
 	return assets, nil
 }
 
-func (s *SmartContract) FindOwnerctx contractapi.TransactionContextInterface, owner string) ([]*Asset, error) {
+func (s *SmartContract) FindOwner(ctx contractapi.TransactionContextInterface, owner string) ([]*Asset, error) {
 	// range query with empty string for startKey and endKey does an
 	// open-ended query of all assets in the chaincode namespace.
 	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")

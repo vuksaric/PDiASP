@@ -10,6 +10,8 @@ import * as crypto from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { TextDecoder } from 'util';
+import * as readline from 'node:readline';
+const prompt = require('prompt-sync')();
 
 const channelName = envOrDefault('CHANNEL_NAME', 'mychannel');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
@@ -70,22 +72,63 @@ async function main(): Promise<void> {
         const contract = network.getContract(chaincodeName);
 
         // Initialize a set of asset data on the ledger using the chaincode 'InitLedger' function.
-        await initLedger(contract);
+        //await initLedger(contract);
 
+
+        do{
+            var input = prompt("1.) GetAllAssets \n 2.) GetAllOwners \n 3.) TransferAsset \n 4.) ChangeColor \n 5.) CreateFailure \n 6.) RepairFailures");
+            if(input == 1){
+                await getAllAssets(contract);
+            }
+            else if(input == 2){
+                await getAllOwners(contract);
+            }
+            else if(input == 3){
+                const assetId = prompt("AssetId:");
+                const newOwner = prompt("NewOwnerId");
+                //await transferAssetAsync(contract, assetId, newOwner);
+            }
+            else if(input == 4){
+                const assetId = prompt("AssetId:");
+                const color = prompt("Color:"); 
+                //await ChangeColorAsync(contract, assetId, color)
+            }
+            else if(input == 5){
+                const assetId = prompt("AssetId:");
+                const failureName = prompt("Failure name:");
+                const price = prompt("Price:");
+                await CreateFailureAsync(contract, assetId, failureName, price);
+            }
+            else if(input == 6){
+                const assetId = prompt("AssetId:");
+                await RepairFailuresAsync(contract, assetId);
+            }
+        }
+        while(input != 7)
+        /*rl.question("Welcome", function(input){
+            console.log(input);
+            rl2.question("Choose option: /n 1.) Proba1 /n 2.) Proba2 /n 3.) Proba3",function(input2){
+                    while((parseInt(input) != 4)){
+                    console.log(input2);
+                    }
+            rl.close
+            console.log("izasao");
+            })
+        })*/
         // Return all the current assets on the ledger.
-        await getAllAssets(contract);
+        //await getAllAssets(contract);
 
         // Create a new asset on the ledger.
-        await createAsset(contract);
+        //await createAsset(contract);
 
         // Update an existing asset asynchronously.
-        await transferAssetAsync(contract);
+        //await transferAssetAsync(contract);
 
         // Get the asset details by assetID.
-        await readAssetByID(contract);
+        //await readAssetByID(contract);
 
         // Update an asset which does not exist.
-        await updateNonExistentAsset(contract)
+        //await updateNonExistentAsset(contract)
     } finally {
         gateway.close();
         client.close();
@@ -143,6 +186,16 @@ async function getAllAssets(contract: Contract): Promise<void> {
     console.log('*** Result:', result);
 }
 
+async function getAllOwners(contract: Contract): Promise<void> {
+    console.log('\n--> Evaluate Transaction: getAllOwners, function returns all the current assets on the ledger');
+
+    const resultBytes = await contract.evaluateTransaction('getAllOwners');
+
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', result);
+}
+
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
@@ -170,11 +223,11 @@ async function createAsset(contract: Contract): Promise<void> {
  * Submit transaction asynchronously, allowing the application to process the smart contract response (e.g. update a UI)
  * while waiting for the commit notification.
  */
-async function transferAssetAsync(contract: Contract): Promise<void> {
-    /*console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
+async function transferAssetAsync(contract: Contract, assetId:string, newOwner: string ): Promise<void> {
+    console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
 
     const commit = await contract.submitAsync('TransferAsset', {
-        arguments: [assetId, 'Saptha'],
+        arguments: [assetId,newOwner],
     });
     const oldOwner = utf8Decoder.decode(commit.getResult());
 
@@ -186,7 +239,64 @@ async function transferAssetAsync(contract: Contract): Promise<void> {
         throw new Error(`Transaction ${status.transactionId} failed to commit with status code ${status.code}`);
     }
 
-    console.log('*** Transaction committed successfully');*/
+    console.log('*** Transaction committed successfully');
+}
+
+async function ChangeColorAsync(contract: Contract, assetId:string, color: string ): Promise<void> {
+    console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
+
+    const commit = await contract.submitAsync('ChangeColor', {
+        arguments: [assetId,color],
+    });
+    const oldOwner = utf8Decoder.decode(commit.getResult());
+
+    console.log(`*** Successfully submitted transaction to transfer ownership from ${oldOwner} to Saptha`);
+    console.log('*** Waiting for transaction commit');
+
+    const status = await commit.getStatus();
+    if (!status.successful) {
+        throw new Error(`Transaction ${status.transactionId} failed to commit with status code ${status.code}`);
+    }
+
+    console.log('*** Transaction committed successfully');
+}
+
+async function CreateFailureAsync(contract: Contract, assetId:string, failure: string, price: string ): Promise<void> {
+    console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
+
+    const commit = await contract.submitAsync('CreateFailure', {
+        arguments: [assetId,failure,price],
+    });
+    const oldOwner = utf8Decoder.decode(commit.getResult());
+
+    console.log(`*** Successfully submitted transaction to transfer ownership from ${oldOwner} to Saptha`);
+    console.log('*** Waiting for transaction commit');
+
+    const status = await commit.getStatus();
+    if (!status.successful) {
+        throw new Error(`Transaction ${status.transactionId} failed to commit with status code ${status.code}`);
+    }
+
+    console.log('*** Transaction committed successfully');
+}
+
+async function RepairFailuresAsync(contract: Contract, assetId:string): Promise<void> {
+    console.log('\n--> Async Submit Transaction: TransferAsset, updates existing asset owner');
+
+    const commit = await contract.submitAsync('RepairFailures', {
+        arguments: [assetId],
+    });
+    const oldOwner = utf8Decoder.decode(commit.getResult());
+
+    console.log(`*** Successfully submitted transaction to transfer ownership from ${oldOwner} to Saptha`);
+    console.log('*** Waiting for transaction commit');
+
+    const status = await commit.getStatus();
+    if (!status.successful) {
+        throw new Error(`Transaction ${status.transactionId} failed to commit with status code ${status.code}`);
+    }
+
+    console.log('*** Transaction committed successfully');
 }
 
 async function readAssetByID(contract: Contract): Promise<void> {
